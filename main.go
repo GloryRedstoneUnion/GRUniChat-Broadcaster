@@ -2,19 +2,118 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
+	"strings"
 	"syscall"
 	"time"
 
-	"encoding/json"
 	"websocket_broadcaster/internal/config"
 	"websocket_broadcaster/internal/connection"
 	"websocket_broadcaster/pkg/logger"
 )
+
+// 版本信息变量，通过编译时 -ldflags 注入
+var (
+	Version   = "dev"     // 版本号
+	BuildTime = "unknown" // 编译时间
+)
+
+// GitHubRelease GitHub API 响应结构
+type GitHubRelease struct {
+	TagName string `json:"tag_name"`
+	Name    string `json:"name"`
+	HTMLURL string `json:"html_url"`
+}
+
+// checkForUpdates 检查更新
+func checkForUpdates() {
+	if Version == "dev" {
+		return // 开发版本跳过更新检查
+	}
+
+	fmt.Print(">>> 检查更新中...")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get("https://api.github.com/repos/GloryRedstoneUnion/GRUniChat-MCDR/releases/latest")
+	if err != nil {
+		fmt.Printf(" 检查失败: %v\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		fmt.Printf(" 检查失败: HTTP %d\n", resp.StatusCode)
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf(" 读取响应失败: %v\n", err)
+		return
+	}
+
+	var release GitHubRelease
+	if err := json.Unmarshal(body, &release); err != nil {
+		fmt.Printf(" 解析响应失败: %v\n", err)
+		return
+	}
+
+	latestVersion := release.TagName
+	currentVersion := Version
+
+	// 简单的版本比较
+	if compareVersions(currentVersion, latestVersion) < 0 {
+		fmt.Printf(" 发现新版本!\n")
+		fmt.Printf(">>> 当前版本: %s\n", currentVersion)
+		fmt.Printf(">>> 最新版本: %s\n", latestVersion)
+		fmt.Printf(">>> 下载地址: %s\n\n", release.HTMLURL)
+	} else {
+		fmt.Printf(" 已是最新版本\n")
+	}
+}
+
+// compareVersions 比较版本号，返回 -1(当前版本较老), 0(相同), 1(当前版本较新)
+func compareVersions(current, latest string) int {
+	// 移除 'v' 前缀
+	current = strings.TrimPrefix(current, "v")
+	latest = strings.TrimPrefix(latest, "v")
+
+	// 提取版本号部分 (去除 pre-release 标识)
+	re := regexp.MustCompile(`^(\d+\.\d+\.\d+)`)
+	currentMatch := re.FindString(current)
+	latestMatch := re.FindString(latest)
+
+	if currentMatch == "" || latestMatch == "" {
+		return 0 // 无法解析版本号
+	}
+
+	currentParts := strings.Split(currentMatch, ".")
+	latestParts := strings.Split(latestMatch, ".")
+
+	for i := 0; i < 3; i++ {
+		var currentNum, latestNum int
+		if i < len(currentParts) {
+			fmt.Sscanf(currentParts[i], "%d", &currentNum)
+		}
+		if i < len(latestParts) {
+			fmt.Sscanf(latestParts[i], "%d", &latestNum)
+		}
+
+		if currentNum < latestNum {
+			return -1
+		} else if currentNum > latestNum {
+			return 1
+		}
+	}
+	return 0
+}
 
 // printBanner 打印启动横幅
 func printBanner() {
@@ -30,10 +129,13 @@ func printBanner() {
 	fmt.Println("              | |_) || |  | (_) || (_| || (_| || (__| (_| |\\__ \\| |_|  __/| |  ")
 	fmt.Println("              |____/ |_|   \\___/  \\__,_| \\__,_| \\___|\\__,_||___/ \\__|\\___||_|  ")
 	fmt.Println()
-	fmt.Println("                         WebSocket 消息广播器 v1.0.0                          ")
+	fmt.Printf("                         WebSocket 消息广播器 %s                          \n", Version)
 	fmt.Println()
-	fmt.Println("                      作者: Glory Redstone Union - caikun233                         ")
+	fmt.Println("                         作者: Glory Redstone Union                           ")
 	fmt.Println("                     描述: 用于跨平台消息同步的WebSocket广播服务               ")
+	if BuildTime != "unknown" {
+		fmt.Printf("                         编译时间: %s                        \n", BuildTime)
+	}
 	fmt.Println()
 	fmt.Println("═══════════════════════════════════════════════════════════════════════════════")
 	fmt.Println()
@@ -47,7 +149,13 @@ func main() {
 	var debugMode = flag.Bool("debug", false, "启用调试模式")
 	var hotReload = flag.Bool("hot-reload", true, "启用配置热重载")
 	var interactive = flag.Bool("interactive", true, "启用交互式热重载确认")
+	var noCheckUpdate = flag.Bool("no-check-update", false, "跳过版本检查")
 	flag.Parse()
+
+	// 检查更新（如果未被禁用）
+	if !*noCheckUpdate && Version != "dev" {
+		checkForUpdates()
+	}
 
 	// 初始化日志器
 	log := logger.NewDefaultLogger(*debugMode)
