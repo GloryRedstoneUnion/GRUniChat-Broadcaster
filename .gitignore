@@ -1,7 +1,6 @@
 # Binaries
 bin/
 *.exe
-broadcaster
 broadcaster-*
 
 # Dependencies
