@@ -1,0 +1,32 @@
+# Binaries
+bin/
+*.exe
+broadcaster
+broadcaster-*
+
+# Dependencies
+vendor/
+
+# Go build cache
+.cache/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Config files (optional)
+config.local.yaml
+*.local.yaml
+
+# Logs
+*.log
+logs/
+
+# Test files
+test_output/
