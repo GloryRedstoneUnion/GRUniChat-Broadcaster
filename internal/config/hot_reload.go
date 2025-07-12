@@ -134,8 +134,8 @@ func (hr *HotReloader) watchLoop() {
 
 // handleInteractiveReload 处理交互式重载
 func (hr *HotReloader) handleInteractiveReload() {
-	fmt.Println("\n🔄 检测到配置文件变化！")
-	fmt.Println("⚠️  路由处理已暂停，WebSocket连接保持活跃")
+	fmt.Println("\n[配置变化] 检测到配置文件变化！")
+	fmt.Println("[警告] 路由处理已暂停，WebSocket连接保持活跃")
 	fmt.Print("是否重载配置文件？(y/n/preview): ")
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -146,13 +146,13 @@ func (hr *HotReloader) handleInteractiveReload() {
 		case "y", "yes":
 			hr.performReload()
 		case "n", "no":
-			fmt.Println("❌ 重载已取消，恢复路由处理")
+			fmt.Println("[取消] 重载已取消，恢复路由处理")
 			hr.ResumeRouting()
 		case "p", "preview":
 			hr.previewConfig()
 			hr.handleInteractiveReload() // 递归调用以再次询问
 		default:
-			fmt.Println("❓ 无效输入，请输入 y/n/preview")
+			fmt.Println("[提示] 无效输入，请输入 y/n/preview")
 			hr.handleInteractiveReload() // 递归调用以再次询问
 		}
 	}
@@ -166,28 +166,28 @@ func (hr *HotReloader) handleAutoReload() {
 
 // previewConfig 预览新配置文件内容
 func (hr *HotReloader) previewConfig() {
-	fmt.Println("\n📋 配置文件预览:")
+	fmt.Println("\n[预览] 配置文件预览:")
 	fmt.Println("=" + strings.Repeat("=", 50))
 
 	// 尝试加载新配置
 	newConfig, err := Load(hr.configPath)
 	if err != nil {
-		fmt.Printf("❌ 配置文件加载失败: %v\n", err)
+		fmt.Printf("[错误] 配置文件加载失败: %v\n", err)
 		return
 	}
 
 	// 验证新配置
 	if err := newConfig.Validate(); err != nil {
-		fmt.Printf("❌ 配置验证失败: %v\n", err)
+		fmt.Printf("[错误] 配置验证失败: %v\n", err)
 		return
 	}
 
 	// 显示配置摘要
-	fmt.Printf("🌐 服务器: %s\n", newConfig.GetWebSocketURL())
-	fmt.Printf("🗄️  数据库: %s\n", newConfig.Database.Type)
+	fmt.Printf("[服务器] %s\n", newConfig.GetWebSocketURL())
+	fmt.Printf("[数据库] %s\n", newConfig.Database.Type)
 
 	if len(newConfig.Groups) > 0 {
-		fmt.Printf("👥 群组数量: %d\n", len(newConfig.Groups))
+		fmt.Printf("[群组] 数量: %d\n", len(newConfig.Groups))
 		for i, group := range newConfig.Groups {
 			if group.Enabled {
 				fmt.Printf("   %d. %s (%d个成员)\n", i+1, group.Name, len(group.Members))
@@ -202,7 +202,7 @@ func (hr *HotReloader) previewConfig() {
 				enabledRules++
 			}
 		}
-		fmt.Printf("📋 规则: %d个启用/%d个总计\n", enabledRules, len(newConfig.Rules))
+		fmt.Printf("[规则] %d个启用/%d个总计\n", enabledRules, len(newConfig.Rules))
 	}
 
 	fmt.Println("=" + strings.Repeat("=", 50))
@@ -216,8 +216,8 @@ func (hr *HotReloader) performReload() {
 	newConfig, err := Load(hr.configPath)
 	if err != nil {
 		hr.logger.Errorf("重载失败 - 配置文件加载错误: %v", err)
-		fmt.Printf("❌ 重载失败: %v\n", err)
-		fmt.Println("🔄 恢复路由处理，继续使用旧配置")
+		fmt.Printf("[错误] 重载失败: %v\n", err)
+		fmt.Println("[恢复] 恢复路由处理，继续使用旧配置")
 		hr.ResumeRouting()
 		return
 	}
@@ -225,8 +225,8 @@ func (hr *HotReloader) performReload() {
 	// 验证新配置
 	if err := newConfig.Validate(); err != nil {
 		hr.logger.Errorf("重载失败 - 配置验证错误: %v", err)
-		fmt.Printf("❌ 重载失败: %v\n", err)
-		fmt.Println("🔄 恢复路由处理，继续使用旧配置")
+		fmt.Printf("[错误] 重载失败: %v\n", err)
+		fmt.Println("[恢复] 恢复路由处理，继续使用旧配置")
 		hr.ResumeRouting()
 		return
 	}
@@ -235,8 +235,8 @@ func (hr *HotReloader) performReload() {
 	if hr.onReload != nil {
 		if err := hr.onReload(newConfig); err != nil {
 			hr.logger.Errorf("重载失败 - 回调错误: %v", err)
-			fmt.Printf("❌ 重载失败: %v\n", err)
-			fmt.Println("🔄 恢复路由处理，继续使用旧配置")
+			fmt.Printf("[错误] 重载失败: %v\n", err)
+			fmt.Println("[恢复] 恢复路由处理，继续使用旧配置")
 			hr.ResumeRouting()
 			return
 		}
@@ -250,8 +250,8 @@ func (hr *HotReloader) performReload() {
 	// 恢复路由处理
 	hr.ResumeRouting()
 
-	hr.logger.Info("✅ 配置重载成功")
+	hr.logger.Info("配置重载成功")
 	if hr.isInteractive {
-		fmt.Println("✅ 配置重载成功！路由处理已恢复")
+		fmt.Println("[成功] 配置重载成功！路由处理已恢复")
 	}
 }

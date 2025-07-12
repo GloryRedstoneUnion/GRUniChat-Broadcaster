@@ -1,80 +1,72 @@
-# WebSocket 广播器配置文件 (热重载测试)
+# WebSocket 广播器配置文件 (自动生成)
+# 此文件由系统自动创建，包含推荐的默认配置
+# 请根据您的实际需求修改相关设置
 
 server:
-  host: "0.0.0.0"      # 监听地址
-  port: "8765"         # 监听端口
-  path: "/ws"          # WebSocket路径
-
-# 数据库配置（可选）
+    host: 0.0.0.0
+    port: "8765"
+    path: /ws
 database:
-  type: "memory"       # 数据库类型: memory, redis, mysql, postgresql
-  message_ttl: 3600   # 消息TTL（秒）
-
-# 群组配置（推荐）- 简化多平台互通
-groups:
-  # 群组1: 全平台互通
-  - name: "全平台互通"
-    members:
-      - "creative"
-      - "survival" 
-      - "test_client"
-      - "debug_client"   # 添加测试客户端
-      - "qq_bot"        # 添加更多可能的客户端
-    message_types: ["chat"]
-    enabled: true
-    transform:
-      prefix_chat: ""
-
-  # 群组2: 游戏事件广播
-  - name: "事件广播"
-    members:
-      - "creative"
-      - "survival"
-      - "test_client"
-      - "qq_bot"        # 添加更多可能的客户端
-    message_types: ["event"]
-    enabled: true
-    transform:
-      prefix_event: "【事件】 "
-
-# 广播规则
-# 传统规则配置（可选）- 特殊需求使用
-# 注意：群组配置优先于规则配置，建议优先使用群组配置
+    type: memory
+    redis:
+        host: ""
+        port: 0
+        password: ""
+        db: 0
+    mysql:
+        host: ""
+        port: 0
+        user: ""
+        password: ""
+        database: ""
+    postgresql:
+        host: ""
+        port: 0
+        user: ""
+        password: ""
+        database: ""
+        sslmode: ""
+    message_ttl: 3600
 rules:
-  # 特殊规则: 监控系统转发（群组配置无法实现的单向转发）
-  - name: "监控转发"
-    from_sources: ["*"]
-    to_targets: ["monitor_system"]
-    message_types: ["event"]
-    enabled: false               # 默认禁用，按需启用
-    transform:
-      prefix_event: "[监控] "
-
-  # 以下规则已被群组配置替代，保留作为参考
-  # 规则1: 转发所有聊天消息 -> 已被"全平台互通"群组替代
-  # - name: "转发聊天消息"
-  #   from_sources: ["*"]
-  #   to_targets: ["*"]
-  #   message_types: ["chat"]
-  #   enabled: false
-
-  # 规则2: 转发游戏事件 -> 已被"事件广播"群组替代
-  # - name: "转发游戏事件" 
-  #   from_sources: ["minecraft"]
-  #   to_targets: ["*"]
-  #   message_types: ["event"]
-  #   enabled: false
-
-  # 规则3-5: 已被群组配置替代，详见群组配置部分
-
-# 外部客户端配置（可选，用于主动连接）
+    - name: 监控转发
+      from_sources:
+        - '*'
+      to_targets:
+        - monitor_system
+      message_types:
+        - event
+      enabled: false
+      transform:
+        prefix_event: '[监控] '
+groups:
+    - name: 全平台互通
+      members:
+        - creative
+        - survival
+        - test_client
+        - debug_client
+        - qq_bot
+      message_types:
+        - chat
+      enabled: true
+      transform: {}
+    - name: 事件广播
+      members:
+        - creative
+        - survival
+        - test_client
+        - qq_bot
+      message_types:
+        - event
+      enabled: true
+      transform:
+        prefix_event: '【事件】 '
 clients:
-  - name: "minecraft_server"
-    url: "ws://localhost:8766/ws"
-    auto_reconnect: true
-    reconnect_interval: 5
-
-  - name: "qq_bot"
-    url: "ws://localhost:8767/ws" 
-    auto_reconnect: true
-    reconnect_interval: 5
+    - name: minecraft_server
+      url: ws://localhost:8766/ws
+      auto_reconnect: true
+      reconnect_interval: 5
+    - name: qq_bot
+      url: ws://localhost:8767/ws
+      auto_reconnect: true
+      reconnect_interval: 5

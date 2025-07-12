@@ -16,7 +16,33 @@ import (
 	"websocket_broadcaster/pkg/logger"
 )
 
+// printBanner 打印启动横幅
+func printBanner() {
+	fmt.Println("═══════════════════════════════════════════════════════════════════════════════")
+	fmt.Println()
+	fmt.Println("    ____  ____   _   _         _   ____  _             _                       ")
+	fmt.Println("   / ___||  _ \\ | | | | _ __  (_) / ___|| |__    __ _ | |_                     ")
+	fmt.Println("  | |  _ | |_) || | | || '_ \\ | || |    | '_ \\  / _` || __|                    ")
+	fmt.Println("  | |_| ||  _ < | |_| || | | || || |___ | | | || (_| || |_                     ")
+	fmt.Println("   \\____||_| \\_\\_\\___/ |_| |_||_| \\____||_| |_| \\__,_| \\__|      _             ")
+	fmt.Println("              | __ )  _ __  ___    __ _   __| |  ___  __ _  ___ | |_  ___  _ __ ")
+	fmt.Println("              |  _ \\ | '__|/ _ \\  / _` | / _` | / __|/ _` |/ __|| __|/ _ \\| '__|")
+	fmt.Println("              | |_) || |  | (_) || (_| || (_| || (__| (_| |\\__ \\| |_|  __/| |  ")
+	fmt.Println("              |____/ |_|   \\___/  \\__,_| \\__,_| \\___|\\__,_||___/ \\__|\\___||_|  ")
+	fmt.Println()
+	fmt.Println("                         WebSocket 消息广播器 v1.0.0                          ")
+	fmt.Println()
+	fmt.Println("                      作者: Glory Redstone Union - caikun233                         ")
+	fmt.Println("                     描述: 用于跨平台消息同步的WebSocket广播服务               ")
+	fmt.Println()
+	fmt.Println("═══════════════════════════════════════════════════════════════════════════════")
+	fmt.Println()
+}
+
 func main() {
+	// 打印启动横幅
+	printBanner()
+
 	var configFile = flag.String("config", "config.yaml", "配置文件路径")
 	var debugMode = flag.Bool("debug", false, "启用调试模式")
 	var hotReload = flag.Bool("hot-reload", true, "启用配置热重载")
@@ -115,23 +141,25 @@ func main() {
 	// 设置热重载回调
 	if hotReloader != nil {
 		hotReloader.SetReloadCallback(func(newConfig *config.Config) error {
-			log.Info("正在应用新配置...")
-
 			// 更新连接管理器的配置
 			if err := cm.UpdateConfig(newConfig); err != nil {
 				return fmt.Errorf("更新连接管理器配置失败: %v", err)
 			}
-
-			log.Info("新配置应用成功")
 			return nil
 		})
 
 		// 启动热重载监听
 		hotReloader.Start()
-		log.Info("配置热重载已启用")
 	}
 
-	log.Infof("WebSocket广播器启动: %s", cfg.GetWebSocketURL())
+	fmt.Printf(">>> 服务器启动成功: %s\n", cfg.GetWebSocketURL())
+	if *hotReload {
+		fmt.Printf(">>> 配置热重载: 已启用\n")
+	}
+	if *debugMode {
+		fmt.Printf(">>> 调试模式: 已启用\n")
+	}
+	fmt.Printf(">>> 按 Ctrl+C 停止服务器\n\n")
 
 	// 优雅关闭
 	quit := make(chan os.Signal, 1)
@@ -145,7 +173,7 @@ func main() {
 	}()
 
 	<-quit
-	log.Info("正在关闭服务器...")
+	fmt.Printf("\n>>> 正在关闭服务器...\n")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -165,6 +193,6 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Errorf("服务器关闭失败: %v", err)
 	} else {
-		log.Info("服务器已关闭")
+		fmt.Printf(">>> 服务器已关闭\n")
 	}
 }
