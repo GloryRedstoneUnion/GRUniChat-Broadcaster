@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"websocket_broadcaster/internal/message"
-	"websocket_broadcaster/pkg/logger"
+	"GRUniChat-Broadcaster/internal/message"
+	"GRUniChat-Broadcaster/pkg/logger"
 )
 
 // Middleware WebSocket消息中间件接口
@@ -42,10 +42,10 @@ func (m *ValidationMiddleware) Process(msg *message.Message) (*message.Message, 
 		m.logger.Error("消息类型不能为空")
 		return nil, nil
 	}
-	
+
 	// Body是结构体，不需要nil检查
 	m.logger.Debugf("消息验证通过: type=%s", msg.Type)
-	
+
 	return msg, nil
 }
 
@@ -83,7 +83,7 @@ func (c *MiddlewareChain) Add(middleware Middleware) {
 func (c *MiddlewareChain) Process(msg *message.Message) (*message.Message, error) {
 	current := msg
 	var err error
-	
+
 	for _, middleware := range c.middlewares {
 		if current == nil {
 			break
@@ -94,6 +94,6 @@ func (c *MiddlewareChain) Process(msg *message.Message) (*message.Message, error
 			return nil, err
 		}
 	}
-	
+
 	return current, nil
 }

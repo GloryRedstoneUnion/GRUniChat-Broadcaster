@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	"websocket_broadcaster/internal/config"
-	"websocket_broadcaster/internal/connection"
-	"websocket_broadcaster/pkg/logger"
+	"GRUniChat-Broadcaster/internal/config"
+	"GRUniChat-Broadcaster/internal/connection"
+	"GRUniChat-Broadcaster/pkg/logger"
 )
 
 // 版本信息变量，通过编译时 -ldflags 注入

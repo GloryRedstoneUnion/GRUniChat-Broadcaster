@@ -1,10 +1,10 @@
 package router
 
 import (
+	"GRUniChat-Broadcaster/internal/config"
+	"GRUniChat-Broadcaster/pkg/logger"
+	"GRUniChat-Broadcaster/pkg/utils"
 	"sync"
-	"websocket_broadcaster/internal/config"
-	"websocket_broadcaster/pkg/logger"
-	"websocket_broadcaster/pkg/utils"
 )
 
 // Router 消息路由器

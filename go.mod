@@ -1,4 +1,4 @@
-module websocket_broadcaster
+module GRUniChat-Broadcaster
 
 go 1.21
 

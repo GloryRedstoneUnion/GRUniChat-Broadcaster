@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"websocket_broadcaster/pkg/logger"
+	"GRUniChat-Broadcaster/pkg/logger"
 )
 
 // HotReloader 配置热重载管理器

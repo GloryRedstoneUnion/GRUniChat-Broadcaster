@@ -1,9 +1,9 @@
 package database
 
 import (
+	"GRUniChat-Broadcaster/internal/config"
 	"fmt"
 	"time"
-	"websocket_broadcaster/internal/config"
 
 	_ "github.com/go-sql-driver/mysql" // MySQL驱动
 	_ "github.com/lib/pq"              // PostgreSQL驱动

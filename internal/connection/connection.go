@@ -8,13 +8,13 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"websocket_broadcaster/internal/config"
-	"websocket_broadcaster/internal/message"
-	"websocket_broadcaster/pkg/broadcaster"
-	"websocket_broadcaster/pkg/database"
-	"websocket_broadcaster/pkg/logger"
-	"websocket_broadcaster/pkg/middleware"
-	"websocket_broadcaster/pkg/router"
+	"GRUniChat-Broadcaster/internal/config"
+	"GRUniChat-Broadcaster/internal/message"
+	"GRUniChat-Broadcaster/pkg/broadcaster"
+	"GRUniChat-Broadcaster/pkg/database"
+	"GRUniChat-Broadcaster/pkg/logger"
+	"GRUniChat-Broadcaster/pkg/middleware"
+	"GRUniChat-Broadcaster/pkg/router"
 )
 
 var upgrader = websocket.Upgrader{
@@ -118,30 +118,30 @@ func (cm *ConnectionManager) Stop() error {
 // UpdateConfig 更新配置（用于热重载）
 func (cm *ConnectionManager) UpdateConfig(newConfig *config.Config) error {
 	cm.logger.Info("正在更新连接管理器配置...")
-	
+
 	// 创建新的路由器
 	newRouter := router.NewRouter(newConfig, cm.logger)
-	
+
 	// 创建新的中间件链
 	mw := middleware.NewMiddlewareChain(cm.logger)
 	mw.Add(middleware.NewAuthMiddleware(cm.logger))
 	mw.Add(middleware.NewValidationMiddleware(cm.logger))
 	mw.Add(middleware.NewLoggingMiddleware(cm.logger))
-	
+
 	// 创建新的广播器
 	newBroadcaster := broadcaster.NewBroadcaster(newRouter, mw, cm.logger)
-	
+
 	// 迁移现有连接到新的广播器
 	connections := cm.broadcaster.GetAllConnections()
 	for _, conn := range connections {
 		newBroadcaster.AddConnection(conn)
 		cm.broadcaster.RemoveConnection(conn.GetID())
 	}
-	
+
 	// 更新广播器和配置
 	cm.broadcaster = newBroadcaster
 	cm.config = newConfig
-	
+
 	cm.logger.Info("连接管理器配置更新完成")
 	return nil
 }
