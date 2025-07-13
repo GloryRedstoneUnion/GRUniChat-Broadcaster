@@ -3,6 +3,10 @@ bin/
 *.exe
 broadcaster-*
 
+#config
+config.yaml
+*.yaml
+
 # Dependencies
 vendor/
 

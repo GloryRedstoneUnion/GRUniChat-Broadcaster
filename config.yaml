@@ -39,17 +39,22 @@ rules:
       transform:
         prefix_event: '[监控] '
 groups:
-    - name: 全平台互通
-      members:
+    - name: "逻辑验证测试组"
+      members: 
         - creative
         - survival
         - test_client
-        - debug_client
         - qq_bot
-      message_types:
-        - chat
+      message_types: ["chat", "event"]
       enabled: true
       transform: {}
+      blacklist:
+        # 测试配置：server1,2,3之间互相
+        - name: "服务器组内互相阻止"
+          description: "测试from和to列表相同时的阻止逻辑"
+          from: ["creative", "survival"]
+          to: ["creative", "survival"]
+          enabled: true
     - name: 事件广播
       members:
         - creative

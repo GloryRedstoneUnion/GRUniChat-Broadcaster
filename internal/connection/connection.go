@@ -84,7 +84,7 @@ func NewConnectionManager(cfg *config.Config, log logger.Logger) (*ConnectionMan
 	mw.Add(middleware.NewLoggingMiddleware(log))
 
 	// 创建广播器
-	bc := broadcaster.NewBroadcaster(rt, mw, log)
+	bc := broadcaster.NewBroadcaster(rt, mw, cfg, log)
 
 	// 创建消息存储
 	messageStore, err := database.CreateMessageStore(&cfg.Database)
@@ -129,7 +129,7 @@ func (cm *ConnectionManager) UpdateConfig(newConfig *config.Config) error {
 	mw.Add(middleware.NewLoggingMiddleware(cm.logger))
 
 	// 创建新的广播器
-	newBroadcaster := broadcaster.NewBroadcaster(newRouter, mw, cm.logger)
+	newBroadcaster := broadcaster.NewBroadcaster(newRouter, mw, newConfig, cm.logger)
 
 	// 迁移现有连接到新的广播器
 	connections := cm.broadcaster.GetAllConnections()

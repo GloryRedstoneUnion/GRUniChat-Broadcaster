@@ -25,7 +25,7 @@ var (
 	BuildTime = "unknown" // 编译时间
 )
 
-// GitHubRelease GitHub API 响应结构
+// GitHubRelease GitHub API响应结构
 type GitHubRelease struct {
 	TagName string `json:"tag_name"`
 	Name    string `json:"name"`
@@ -119,19 +119,19 @@ func compareVersions(current, latest string) int {
 func printBanner() {
 	fmt.Println("═══════════════════════════════════════════════════════════════════════════════")
 	fmt.Println()
-	fmt.Println("    ____  ____   _   _         _   ____  _             _                       ")
+	fmt.Println("    ____  ____   _   _         _  ____  _             _                       ")
 	fmt.Println("   / ___||  _ \\ | | | | _ __  (_) / ___|| |__    __ _ | |_                     ")
 	fmt.Println("  | |  _ | |_) || | | || '_ \\ | || |    | '_ \\  / _` || __|                    ")
 	fmt.Println("  | |_| ||  _ < | |_| || | | || || |___ | | | || (_| || |_                     ")
-	fmt.Println("   \\____||_| \\_\\_\\___/ |_| |_||_| \\____||_| |_| \\__,_| \\__|      _             ")
-	fmt.Println("              | __ )  _ __  ___    __ _   __| |  ___  __ _  ___ | |_  ___  _ __ ")
+	fmt.Println("   \\____||_| \\_\\\\___/ |_| |_||_| \\____||_| |_| \\__,_| \\__|                     ")
+	fmt.Println("              | __ )  _   __  ___    __ _   __| |  ___  __ _  ___ | |_  ___  _ __ ")
 	fmt.Println("              |  _ \\ | '__|/ _ \\  / _` | / _` | / __|/ _` |/ __|| __|/ _ \\| '__|")
-	fmt.Println("              | |_) || |  | (_) || (_| || (_| || (__| (_| |\\__ \\| |_|  __/| |  ")
-	fmt.Println("              |____/ |_|   \\___/  \\__,_| \\__,_| \\___|\\__,_||___/ \\__|\\___||_|  ")
+	fmt.Println("              | |_) || |  | (_) || (_| || (_| || (__| (_| |\\__ \\| |_|  __/| |   ")
+	fmt.Println("              |____/ |_|   \\___/  \\__,_| \\__,_| \\___|\\__,_||___/ \\__|\\___||_|   ")
 	fmt.Println()
-	fmt.Printf("                         WebSocket 消息广播器 %s                          \n", Version)
+	fmt.Printf("                             WebSocket 消息广播器 %s                          \n", Version)
 	fmt.Println()
-	fmt.Println("                         作者: Glory Redstone Union                           ")
+	fmt.Println("                         作者: Glory Redstone Union                          ")
 	fmt.Println("                     描述: 用于跨平台消息同步的WebSocket广播服务               ")
 	if BuildTime != "unknown" {
 		fmt.Printf("                         编译时间: %s                        \n", BuildTime)

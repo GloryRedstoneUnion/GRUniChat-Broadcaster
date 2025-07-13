@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -21,6 +23,7 @@ type Body struct {
 	Sender      string `json:"sender"`
 	ChatMessage string `json:"chatMessage"`
 	Command     string `json:"command"`
+	ExecuteAt   string `json:"executeAt,omitempty"` // 当type=command时，指定命令在哪个服务器执行
 	EventDetail string `json:"eventDetail"`
 }
 
@@ -111,4 +114,61 @@ func NewErrorMessage(totalID, error string, code int) *ErrorMessage {
 		Code:      code,
 		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 	}
+}
+
+// ParseCommand 解析命令
+func (b *Body) ParseCommand() (string, string) {
+	if b.Command == "" {
+		return "", ""
+	}
+	parts := strings.SplitN(b.Command, " ", 2)
+	command := parts[0]
+	args := ""
+	if len(parts) > 1 {
+		args = parts[1]
+	}
+	return command, args
+}
+
+// IsPingPong 检查是否为Ping/Pong消息
+func (m *Message) IsPingPong() bool {
+	return m.Type == "ping" || m.Type == "pong"
+}
+
+// MatchEventDetail 匹配事件详情
+func (b *Body) MatchEventDetail(pattern string) (string, bool) {
+	if b.EventDetail == "" {
+		return "", false
+	}
+	matched, err := regexp.MatchString(pattern, b.EventDetail)
+	if err != nil {
+		return "", false
+	}
+	if matched {
+		return b.EventDetail, true
+	}
+	return "", false
+}
+
+// ValidateExecuteAt 验证 ExecuteAt 字段是否有效
+func (m *Message) ValidateExecuteAt(validServers []string) error {
+	if m.Type != "command" {
+		return nil // 非命令消息不需要验证
+	}
+
+	if m.Body.ExecuteAt == "" {
+		return fmt.Errorf("command类型消息必须指定executeAt字段")
+	}
+
+	// 如果提供了有效服务器列表，检查是否在列表中
+	if len(validServers) > 0 {
+		for _, server := range validServers {
+			if server == m.Body.ExecuteAt {
+				return nil
+			}
+		}
+		return fmt.Errorf("指定的服务器 '%s' 不在有效服务器列表中", m.Body.ExecuteAt)
+	}
+
+	return nil
 }

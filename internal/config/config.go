@@ -78,6 +78,17 @@ type BroadcastGroup struct {
 	MessageTypes []string   `yaml:"message_types"`
 	Enabled      bool       `yaml:"enabled"`
 	Transform    *Transform `yaml:"transform,omitempty"`
+	Blacklist    []GroupBlacklistRule `yaml:"blacklist,omitempty"`
+}
+
+// GroupBlacklistRule 群组黑名单规则
+type GroupBlacklistRule struct {
+	Name        string   `yaml:"name"`
+	Description string   `yaml:"description,omitempty"`
+	From        []string `yaml:"from"`          // 源服务器列表，支持通配符
+	To          []string `yaml:"to,omitempty"`  // 目标服务器列表，支持通配符
+	Content     []string `yaml:"content,omitempty"` // 内容关键词过滤，支持正则表达式
+	Enabled     bool     `yaml:"enabled"`
 }
 
 // Transform 消息转换规则
@@ -115,6 +126,21 @@ func createDefaultConfig() *Config {
 				Enabled:      true,
 				Transform: &Transform{
 					PrefixChat: "",
+				},
+				Blacklist: []GroupBlacklistRule{
+					{
+						Name:        "阻止creative到survival的聊天",
+						Description: "防止创造模式服务器的聊天消息发送到生存模式服务器",
+						From:        []string{"creative", "creative_*"},
+						To:          []string{"survival", "survival_*"},
+						Enabled:     true,
+					},
+					{
+						Name:        "过滤管理员命令",
+						Description: "防止管理员命令被广播",
+						Content:     []string{`^/`, `^\!`, `^#`},
+						Enabled:     true,
+					},
 				},
 			},
 			{
