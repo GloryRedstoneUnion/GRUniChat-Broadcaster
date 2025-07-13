@@ -44,7 +44,7 @@ groups:
         - creative
         - survival
         - test_client
-        - qq_bot
+        - QQ
       message_types: ["chat", "event"]
       enabled: true
       transform: {}
@@ -60,7 +60,7 @@ groups:
         - creative
         - survival
         - test_client
-        - qq_bot
+        - QQ
       message_types:
         - event
       enabled: true

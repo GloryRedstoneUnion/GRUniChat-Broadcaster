@@ -1,50 +1,55 @@
-# WebSocket 广播器
+# GRUniChat-Broadcaster
 
-一个用Go实现的WebSocket消息广播中继服务器，支持灵活的规则配置、消息转换和智能命令路由。
+一个用Go实现的高性能WebSocket消息广播中继服务器，专为多平台实时消息同步而设计。
 
 ## ✨ 核心特性
 
-- 🔄 **智能转发**: 基于规则和群组的消息路由系统
-- 🎯 **精确命令路由**: 支持 `executeAt` 字段的单服务器命令执行
-- 🛡️ **群组黑名单**: 组级别的消息过滤和内容屏蔽
-- 🔧 **消息转换**: 支持添加前缀、修改来源等消息转换
-- ⚡ **高性能**: Go语言实现，支持高并发连接
-- 📝 **配置驱动**: YAML配置文件，支持热重载
-- 🔗 **多平台**: 支持游戏服务器、QQ、Discord等多平台互通
+- 🔄 **智能消息路由**: 支持基于群组规则的消息转发和过滤
+- 🎯 **精确命令路由**: 支持 `executeAt` 字段的定向命令执行
+- 🛡️ **群组黑名单**: 灵活的消息过滤和内容屏蔽机制
+- 🔧 **消息转换**: 兼容多种消息格式（新版本和旧版本）
+- ⚡ **高性能**: Go语言实现，支持高并发WebSocket连接
+- � **配置热重载**: 运行时动态重载配置，无需重启服务
+- � **结构化日志**: 详细的调试日志和运行状态监控
+- 🎨 **优雅启动/关闭**: 完整的服务生命周期管理
 
 ## 🚀 最新功能
+
+### 标准消息格式（新版本）
+支持简洁的标准消息格式：
+
+```json
+{
+  "type": "chat|command|event",
+  "body": {
+    "content": "消息内容",
+    "executeAt": "目标服务器ID"  // 仅command类型使用
+  },
+  "source": "消息来源",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
 
 ### executeAt 命令路由
 支持指定命令在特定服务器执行，实现精确的服务器控制：
 
 ```json
 {
-  "from": "admin_panel",
   "type": "command",
   "body": {
-    "sender": "Admin",
-    "command": "give @a diamond 64",
+    "content": "weather clear",
     "executeAt": "survival"
-  }
+  },
+  "source": "admin_console",
+  "timestamp": "2024-01-15T10:30:00Z"
 }
 ```
 
-### 群组黑名单
-支持组级别的消息过滤，防止不当内容传播：
-
-```yaml
-groups:
-  - name: "全服互通"
-    members: ["survival", "creative", "lobby"]
-    blacklist:
-      - name: "防止创造到生存"
-        from: ["creative"]
-        to: ["survival"]
-        enabled: true
-      - name: "过滤危险命令"
-        content: ["^/stop", "^/restart"]
-        enabled: true
-```
+### 配置热重载
+运行时动态重载配置文件，支持交互式确认：
+- 自动检测配置文件变化
+- 交互式确认更新
+- 保持现有连接不断开
 
 ## 项目结构
 
@@ -81,8 +86,12 @@ GRUniChat-Broadcaster/
 
 ### 🏗️ main.go
 程序入口，负责：
-- 启动HTTP服务器
-- 加载配置文件
+- 打印启动横幅和版本信息
+- 命令行参数解析（config, debug, hot-reload, interactive, no-check-update）
+- 版本更新检查（GitHub API）
+- 配置文件加载和验证
+- 热重载管理器初始化
+- WebSocket服务器启动
 - 优雅关闭处理
 
 ### � internal/ 内部包
@@ -95,16 +104,19 @@ GRUniChat-Broadcaster/
 
 #### ⚙️ internal/config/
 配置文件处理：
-- 配置结构体定义（规则、群组、服务器等）
-- YAML配置文件加载
-- 配置验证和辅助方法
+- 配置结构体定义（服务器、群组、黑名单等）
+- YAML配置文件加载和验证
+- 配置热重载管理器
+- 交互式配置更新确认
 
 #### 🔗 internal/connection/
 WebSocket连接管理：
 - 连接管理器实现
 - WebSocket升级和处理
-- 消息广播逻辑
-- 规则匹配和转换
+- 消息广播和路由逻辑
+- executeAt 命令路由
+- 群组黑名单过滤
+- 连接统计和状态管理
 
 ### 📁 pkg/ 公共包
 
@@ -164,7 +176,10 @@ WebSocket连接管理：
 ```bash
 cd GRUniChat-Broadcaster
 go mod tidy
-go build -o broadcaster main.go
+go build -o broadcaster.exe .
+
+# Linux/macOS
+go build -o broadcaster .
 ```
 
 ### 2. 配置文件
@@ -172,55 +187,104 @@ go build -o broadcaster main.go
 编辑 `config.yaml` 文件：
 
 ```yaml
-debug: true
-host: "localhost"
-port: 9001
-database:
-  type: "memory"  # memory/redis/mysql/postgresql
-auth:
-  enabled: true
-  token: "your-secure-token"
-group_config:
-  blacklist:
-    default:
-      - "forbidden_group_1"
-      - "forbidden_group_2"
+server:
+  host: "localhost"
+  port: 8765
+  path: "/ws"
+
+groups:
+  - name: "游戏服务器互通"
+    members: ["survival", "creative", "lobby"]
+    blacklist:
+      - name: "防止测试消息"
+        from: ["test_*"]
+        to: ["survival"]
+        enabled: true
 ```
 
 ### 3. 启动服务器
 
 ```bash
-# 使用默认配置文件
+# 基本启动
 ./broadcaster
+
+# 指定配置文件
+./broadcaster -config custom.yaml
+
+# 启用调试模式
+./broadcaster -debug
+
+# 禁用热重载
+./broadcaster -hot-reload=false
+
+# 禁用版本检查
+./broadcaster -no-check-update
 
 # Windows下
 .\broadcaster.exe
 ```
+
+### 4. 命令行参数
+
+- `-config`: 配置文件路径（默认: config.yaml）
+- `-debug`: 启用调试模式（默认: false）
+- `-hot-reload`: 启用配置热重载（默认: true）
+- `-interactive`: 启用交互式热重载确认（默认: true）
+- `-no-check-update`: 跳过版本检查（默认: false）
 
 ## 🔧 配置说明
 
 ### 基础配置
 
 ```yaml
-debug: true           # 调试模式
-host: "localhost"     # 服务器地址
-port: 9001           # 监听端口
+server:
+  host: "localhost"      # 服务器监听地址
+  port: 8765            # 监听端口
+  path: "/ws"           # WebSocket路径
 
-# 数据库配置
-database:
-  type: "memory"      # 数据库类型: memory/redis/mysql/postgresql
-  
-# 认证配置
-auth:
-  enabled: true       # 启用认证
-  token: "your-token" # 认证令牌
+# 群组配置
+groups:
+  - name: "服务器互通"
+    members: ["survival", "creative", "lobby"]
+    blacklist:
+      - name: "防止创造到生存"
+        from: ["creative"]
+        to: ["survival"]
+        enabled: true
+      - name: "过滤危险命令"
+        content: ["^/stop", "^/restart"]
+        enabled: true
+```
 
-# 群组黑名单配置
-group_config:
-  blacklist:
-    default:          # 默认黑名单
-      - "forbidden_group_1"
-      - "forbidden_group_2"
+### 消息格式支持
+
+#### 新版本格式（推荐）
+```json
+{
+  "type": "chat|command|event",
+  "body": {
+    "content": "消息内容",
+    "executeAt": "目标服务器ID"  // 可选，仅command类型
+  },
+  "source": "消息来源",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+#### 旧版本格式（兼容）
+```json
+{
+  "from": "消息来源",
+  "type": "消息类型",
+  "body": {
+    "sender": "发送者",
+    "chatMessage": "聊天内容",
+    "command": "命令",
+    "eventDetail": "事件详情"
+  },
+  "totalId": "消息ID",
+  "currentTime": "时间戳(毫秒)"
+}
 ```
 
 ### executeAt 命令路由
@@ -239,49 +303,67 @@ group_config:
 }
 ```
 
-详细使用方法请参考 [EXECUTE_AT_GUIDE.md](./EXECUTE_AT_GUIDE.md)
-
-```yaml
-blacklist:
-  - name: "规则名称"
-    description: "规则描述"
-    from: ["source1", "source2*"]     # 来源过滤（支持通配符）
-    to: ["target1", "target2*"]       # 目标过滤（支持通配符）
 ### 群组黑名单规则
 
-可以配置群组级别的黑名单规则来过滤特定消息：
+配置群组级别的消息过滤：
 
 ```yaml
-group_config:
-  blacklist:
-    survival_server:      # 服务器特定黑名单
-      - "banned_group_1"
-      - "banned_group_2"
-    creative_server:
-      - "test_group"
-    default:             # 默认黑名单（所有服务器）
-      - "global_banned"
+groups:
+  - name: "全服互通"
+    members: ["survival", "creative", "lobby", "qq_bot"]
+    blacklist:
+      - name: "阻止创造到生存"
+        from: ["creative"]
+        to: ["survival"]
+        enabled: true
+      - name: "过滤管理命令"
+        content: ["^/op", "^/stop", "^/restart"]
+        enabled: true
+      - name: "禁止测试群组"
+        from: ["test_*"]
+        to: ["*"]
+        enabled: true
 ```
+
+**规则字段说明**：
+- `name`: 规则名称（描述性）
+- `from`: 来源过滤（支持通配符 `*`）
+- `to`: 目标过滤（支持通配符 `*`）
+- `content`: 内容过滤（支持正则表达式）
+- `enabled`: 是否启用此规则
 
 ## 📋 使用场景
 
-### 多服务器互通
-- 游戏服务器间消息转发
-- QQ群与游戏服务器互通
-- Discord与Minecraft联通
-- 多平台统一管理
+### 多平台消息互通
+- 游戏服务器间实时聊天转发
+- QQ群与Minecraft服务器联通
+- Discord与游戏平台集成
+- 跨平台管理和监控
 
-### 命令路由管理
+### 精确命令管理
 - 通过 `executeAt` 字段指定命令执行目标
-- 支持单服务器精确命令投递
-- 避免命令重复执行问题
+- 避免命令在所有服务器重复执行
+- 支持远程单服务器操作
+- 管理面板精确控制
 ```
 
-## 📨 消息格式
+## 📨 消息格式详解
 
-### 标准消息结构
+### 标准消息结构（新版本）
 
-支持标准的WebSocket消息格式：
+```json
+{
+  "type": "chat|command|event",
+  "body": {
+    "content": "消息内容",
+    "executeAt": "目标服务器ID"  // 仅command类型使用
+  },
+  "source": "消息来源",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+### 兼容消息结构（旧版本）
 
 ```json
 {
@@ -291,21 +373,10 @@ group_config:
     "sender": "发送者",
     "chatMessage": "聊天内容",
     "command": "命令",
-    "executeAt": "目标服务器",
     "eventDetail": "事件详情"
   },
   "totalId": "消息ID",
-  "currentTime": "时间戳"
-}
-```
-
-  "type": "chat|command|event",
-  "body": {
-    "content": "消息内容",
-    "executeAt": "目标服务器ID"  // 仅command类型使用
-  },
-  "source": "消息来源",
-  "timestamp": "2024-01-15T10:30:00Z"
+  "currentTime": "时间戳(毫秒)"
 }
 ```
 
@@ -336,72 +407,86 @@ group_config:
 - 如果目标服务器离线，会返回错误信息
 - 如果未指定 `executeAt`，命令会按正常路由规则广播
 
-## 🔌 客户端连接
+## 🔌 客户端连接示例
 
 客户端可以通过WebSocket连接到广播器：
 
 ```javascript
 const ws = new WebSocket('ws://localhost:8765/ws');
 
+ws.onopen = function() {
+    console.log('已连接到GRUniChat-Broadcaster');
+};
+
 // 发送聊天消息
 ws.send(JSON.stringify({
-  type: "chat",
-  body: {
-    content: "Hello World!"
-  },
-  source: "web_client",
-  timestamp: new Date().toISOString()
+    type: "chat",
+    body: {
+        content: "[玩家] Hello World!"
+    },
+    source: "survival",
+    timestamp: new Date().toISOString()
 }));
 
 // 发送命令（指定服务器）
 ws.send(JSON.stringify({
-  type: "command", 
-  body: {
-    content: "weather clear",
-    executeAt: "survival"
-  },
-  source: "admin_console",
-  timestamp: new Date().toISOString()
+    type: "command", 
+    body: {
+        content: "weather clear",
+        executeAt: "survival"
+    },
+    source: "admin_console",
+    timestamp: new Date().toISOString()
+}));
+
+// 发送事件消息
+ws.send(JSON.stringify({
+    type: "event",
+    body: {
+        content: "服务器已启动"
+    },
+    source: "survival",
+    timestamp: new Date().toISOString()
 }));
 ```
 
 ## 📝 日志系统
 
-广播器提供详细的日志输出，支持调试模式：
+广播器提供详细的结构化日志输出：
 
 ```
-[INFO] 2024/01/15 12:00:00 WebSocket服务器启动: ws://localhost:9001/ws
-[INFO] 2024/01/15 12:00:01 客户端连接: 192.168.1.100:54321 (ID: survival)
-[INFO] 2024/01/15 12:00:02 收到消息 [survival -> chat]: Hello World!
+>>> 服务器启动成功: ws://localhost:8765/ws
+>>> 配置热重载: 已启用
+>>> 调试模式: 已启用
+>>> 按 Ctrl+C 停止服务器
+
+[INFO] 2024/01/15 12:00:01 新客户端连接: survival (192.168.1.100)
+[INFO] 2024/01/15 12:00:02 收到消息 [survival] chat: Hello World!
 [INFO] 2024/01/15 12:00:02 消息已广播到 2 个客户端
 [WARN] 2024/01/15 12:00:03 executeAt目标服务器离线: creative
+[INFO] 2024/01/15 12:00:04 配置文件已更新，正在重新加载...
 ```
 
-**过滤策略**：
-- **来源过滤**: 指定来源服务器的消息
-- **目标过滤**: 阻止发送到特定目标
-- **内容过滤**: 关键词和正则表达式过滤
-- **组合过滤**: 多条件同时满足才触发
+### 日志级别
+- `INFO`: 一般信息（连接、消息传递）
+- `WARN`: 警告信息（服务器离线、过滤消息）
+- `ERROR`: 错误信息（连接失败、配置错误）
+- `DEBUG`: 调试信息（详细的消息内容和处理过程）
 
-### 热重载配置
-
-广播器支持配置文件热重载：
-
-```bash
-# 修改配置文件后，程序会自动检测并重新加载
-# 支持交互式确认，确保配置正确
-```
-
-### 消息路由优先级
-
-1. **executeAt 优先**: 命令消息的 `executeAt` 字段具有最高优先级
-2. **黑名单过滤**: 在路由规则之后应用黑名单
-3. **群组路由**: 按群组配置进行消息分发
 ## 🔧 高级功能
+
+### 自动版本检查
+启动时自动检查GitHub最新版本：
+```
+>>> 检查更新中... 发现新版本!
+>>> 当前版本: v0.2.0
+>>> 最新版本: v0.3.0
+>>> 下载地址: https://github.com/GloryRedstoneUnion/GRUniChat-MCDR/releases/latest
+```
 
 ### executeAt 命令路由
 
-使用 `executeAt` 字段可以精确控制命令在哪个服务器执行：
+精确控制命令在哪个服务器执行：
 
 ```json
 {
@@ -415,73 +500,95 @@ ws.send(JSON.stringify({
 }
 ```
 
-**应用场景**：
-- 管理面板控制特定服务器  
-- 上游模块解析命令格式并路由
-- 自动化脚本的精确操作
+**特性**：
+- 如果指定了 `executeAt`，命令只会发送到指定服务器
+- 如果目标服务器离线，会返回错误响应
+- 如果未指定 `executeAt`，命令按群组规则广播
 
-### 群组黑名单系统
+### 配置热重载
 
-配置群组级别的黑名单过滤：
-
-```yaml
-group_config:
-  blacklist:
-    survival:           # 生存服务器黑名单
-      - "test_group"
-      - "banned_group"
-    creative:           # 创造服务器黑名单  
-      - "creative_only"
-    default:            # 全局黑名单
-      - "global_banned"
-```
-
-### 热重载配置
-
-支持运行时重新加载配置文件：
+支持运行时重新加载配置：
 - 自动检测配置文件变化
 - 交互式确认配置更新
 - 保持现有连接不断开
+- 实时应用新的路由规则
+
+### 优雅启动关闭
+
+完整的服务生命周期管理：
+- 启动横幅显示版本信息
+- 信号处理（Ctrl+C）
+- 30秒超时的优雅关闭
+- 清理所有资源和连接
 
 ## 🛠️ 故障排除
 
 ### 常见问题
 
 1. **连接失败**: 
-   - 检查防火墙和端口占用
+   - 检查防火墙和端口占用（默认8765）
    - 确认服务器地址和端口配置
+   - 查看服务器启动日志
 
 2. **消息不转发**: 
-   - 检查客户端连接状态
-   - 查看日志确认消息路由
+   - 检查客户端连接状态（查看日志）
+   - 确认群组配置和成员设置
+   - 检查黑名单规则是否阻止了消息
 
 3. **executeAt 命令失败**:
    - 确认目标服务器在线且已连接
-   - 检查服务器名称拼写
+   - 检查服务器名称拼写（区分大小写）
+   - 查看错误响应消息
 
-4. **黑名单不生效**:
-   - 检查黑名单配置语法
-   - 确认群组名称匹配
+4. **配置热重载不生效**:
+   - 确认启用了热重载功能（-hot-reload=true）
+   - 检查配置文件语法是否正确
+   - 查看交互式确认提示
+
+5. **版本检查失败**:
+   - 检查网络连接
+   - 使用 -no-check-update 跳过版本检查
 
 ### 调试技巧
 
 ```bash
-# 启用调试模式
-./broadcaster
+# 启用调试模式查看详细日志
+./broadcaster -debug
 
-# 配置文件中启用调试
-debug: true
+# 禁用版本检查加快启动
+./broadcaster -no-check-update
+
+# 禁用热重载（生产环境）
+./broadcaster -hot-reload=false -interactive=false
 ```
+
+### 配置验证
+
+程序启动时会自动验证配置文件：
+- 检查YAML语法
+- 验证群组成员设置
+- 检查黑名单规则格式
 
 ## 📖 相关文档
 
-- [executeAt 字段详细说明](./EXECUTE_AT_GUIDE.md)
-- [WebSocket协议文档](./WEBSOCKET_PROTOCOL.md)
+- [WebSocket协议文档](./WEBSOCKET_PROTOCOL.md) - 详细的消息格式和协议说明
+- [配置文件示例](./configs/config.example.yaml) - 完整的配置示例
 
 ## 🤝 贡献指南
 
 欢迎提交 Issue 和 Pull Request 来改进项目！
 
+1. Fork 本项目
+2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add some amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 提交 Pull Request
+
 ## 📄 许可证
 
-MIT License
+本项目基于 MIT License 开源 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+## 🌟 致谢
+
+- Glory Redstone Union 团队
+- 所有贡献者和用户的支持

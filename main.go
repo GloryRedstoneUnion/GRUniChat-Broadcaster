@@ -196,52 +196,6 @@ func main() {
 	// 设置路由
 	http.HandleFunc(cfg.Server.Path, cm.HandleWebSocket)
 
-	// 统计信息API
-	http.HandleFunc("/api/stats", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		stats := cm.GetStats()
-		if data, err := json.Marshal(stats); err == nil {
-			w.Write(data)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error":"统计信息序列化失败"}`))
-		}
-	})
-
-	// 消息状态查询API
-	http.HandleFunc("/api/message/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		// 提取消息ID
-		messageID := r.URL.Path[len("/api/message/"):]
-		if messageID == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"error":"消息ID不能为空"}`))
-			return
-		}
-
-		// 查询消息状态
-		status, err := cm.GetMessageStatus(messageID)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"error":"消息未找到"}`))
-			return
-		}
-
-		response := map[string]interface{}{
-			"message_id": messageID,
-			"status":     status,
-			"timestamp":  time.Now().UnixMilli(),
-		}
-
-		if data, err := json.Marshal(response); err == nil {
-			w.Write(data)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error":"响应序列化失败"}`))
-		}
-	})
-
 	server := &http.Server{
 		Addr: cfg.GetServerAddr(),
 	}
